@@ -66,6 +66,51 @@ step is **not automated** here (default-off, disruptive) — prefer a **real/ent
 **Rollout order:** enable `cert-manager-api-cert` first (low risk), confirm `oc get co kube-apiserver`
 settles (PROGRESSING True→False), then `cert-manager-ingress-cert`.
 
+## Your own issuers (`cert-manager-issuers`)
+
+Set the label `cert-manager-issuers: 'true'` to create the `ClusterIssuer` objects declared in
+`config.certManager.clusterIssuers`. Each entry maps an issuer name to its spec, which is applied
+verbatim, so any issuer type cert-manager supports can be declared: ACME with HTTP-01 or DNS-01
+solvers, Vault, Venafi, or a CA.
+
+```yaml
+labels:
+  cert-manager: 'true'
+  cert-manager-issuers: 'true'
+  cert-manager-api-cert: 'true'
+config:
+  certManager:
+    clusterIssuers:
+      example-acme:
+        acme:
+          server: 'https://acme.example.com/directory'
+          email: 'admin@example.com'
+          privateKeySecretRef:
+            name: example-acme-account-key
+          solvers:
+            - dns01:
+                route53:
+                  region: us-east-1
+                  accessKeyIDSecretRef:
+                    name: example-dns-credentials
+                    key: access-key-id
+                  secretAccessKeySecretRef:
+                    name: example-dns-credentials
+                    key: secret-access-key
+    apiCert:
+      issuer:
+        name: example-acme        # the API server certificate now comes from this issuer
+```
+
+A credential an issuer needs, such as the DNS provider key in the example, is a Secret the spec
+references by name in the `cert-manager` namespace. Config is rendered into ConfigMaps on the
+hub, so no credential belongs in it. The external-secrets-operator policy can deliver that Secret.
+
+`config.certManager.operatorConfig` is merged into the operator's `CertManager` object. Its
+common use is `controllerConfig.overrideArgs`: a cluster whose own resolvers serve a private view
+of a zone needs `--dns01-recursive-nameservers-only` and `--dns01-recursive-nameservers` pointed at
+public resolvers, or the DNS-01 self-check never sees the challenge record.
+
 ## Status
 ✅ **Operator Installation**: Ready to deploy  
 🔧 **Configuration**: Requires operator-specific setup (see below)

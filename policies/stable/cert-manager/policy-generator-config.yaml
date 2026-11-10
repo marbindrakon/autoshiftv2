@@ -53,6 +53,15 @@ policies:
   # Opt-in (cert-manager-api-cert): cert-manager-managed API server serving cert. ADDITIVE namedCertificate
   # (SNI, api.<domain> only — never api-int). Only patches APIServer once the Certificate is Ready (gated in
   # the manifest). object-templates-raw -> consolidateManifests: false.
+  # ClusterIssuers and operator settings from config.certManager. Only clusters with
+  # cert-manager-issuers: 'true'.
+  - name: policy-cert-manager-issuers
+    placement:
+      placementPath: placement-cert-manager-issuers.yaml
+    dependencies:
+      - name: policy-cert-manager-operator-install
+    manifests:
+      - path: manifests/issuers/cluster-issuers.yaml
   - name: policy-cert-manager-api-cert
     placement:
       placementPath: placement-cert-manager-api-cert.yaml

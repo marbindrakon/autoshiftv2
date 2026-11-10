@@ -1,0 +1,43 @@
+# ClusterIssuers declared in config.certManager.clusterIssuers, and operator settings from
+# config.certManager.operatorConfig.
+#
+#   config:
+#     certManager:
+#       operatorConfig: <fields of the CertManager "cluster" spec>
+#       clusterIssuers:
+#         <name>: <ClusterIssuer spec>
+#
+# Each issuer spec is applied verbatim, so any issuer type cert-manager supports can be used:
+# ACME with HTTP-01 or DNS-01 solvers, Vault, Venafi, or a CA. A credential an issuer needs is a
+# Secret it references by name in the cert-manager namespace; nothing secret belongs in config.
+# The API server and ingress certificates use one of these issuers when
+# config.certManager.apiCert.issuer or ingressCert.issuer names it.
+#
+# operatorConfig is merged into the operator's CertManager object. Its common use is
+# controllerConfig.overrideArgs, for example to send DNS-01 self-checks to public resolvers on
+# a cluster whose own resolvers serve a private view of the zone.
+object-templates-raw: |
+  {{hub- $cm := (lookup "v1" "ConfigMap" .PolicyMetadata.namespace (printf "%s.rendered-config" .ManagedClusterName)) | default dict hub}}
+  {{hub- $config := (index ($cm.data | default dict) "config" | default "" | fromYaml | default dict) hub}}
+  {{hub- $certManager := (index $config "certManager" | default dict) hub}}
+  {{hub- $operatorConfig := (index $certManager "operatorConfig" | default dict) hub}}
+  {{hub- if (gt (len (keys $operatorConfig)) 0) hub}}
+  - complianceType: musthave
+    objectDefinition:
+      apiVersion: operator.openshift.io/v1alpha1
+      kind: CertManager
+      metadata:
+        name: cluster
+      spec:
+        {{hub $operatorConfig | toYaml | autoindent hub}}
+  {{hub- end hub}}
+  {{hub- range $name, $spec := (index $certManager "clusterIssuers" | default dict) hub}}
+  - complianceType: musthave
+    objectDefinition:
+      apiVersion: cert-manager.io/v1
+      kind: ClusterIssuer
+      metadata:
+        name: {{hub $name hub}}
+      spec:
+        {{hub $spec | toYaml | autoindent hub}}
+  {{hub- end hub}}
