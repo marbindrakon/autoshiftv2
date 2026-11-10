@@ -1,0 +1,20 @@
+# Hive settings on a hub, from config.hiveConfig.
+#
+# multicluster engine creates the HiveConfig object named hive and owns its lifecycle. The fields
+# declared here are merged into its spec, so anything multicluster engine set stays in place.
+# Typical fields are managedDomains, additionalCertificateAuthoritiesSecretRef and the
+# credentials a platform needs, each of which references a Secret in the hive namespace by name.
+object-templates-raw: |
+  {{hub- $cm := (lookup "v1" "ConfigMap" .PolicyMetadata.namespace (printf "%s.rendered-config" .ManagedClusterName)) | default dict hub}}
+  {{hub- $config := (index ($cm.data | default dict) "config" | default "" | fromYaml | default dict) hub}}
+  {{hub- $spec := (index $config "hiveConfig" | default dict) hub}}
+  {{hub- if (gt (len (keys $spec)) 0) hub}}
+  - complianceType: musthave
+    objectDefinition:
+      apiVersion: hive.openshift.io/v1
+      kind: HiveConfig
+      metadata:
+        name: hive
+      spec:
+        {{hub $spec | toYaml | autoindent hub}}
+  {{hub- end hub}}

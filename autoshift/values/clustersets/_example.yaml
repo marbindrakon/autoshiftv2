@@ -114,6 +114,20 @@ hubClusterSets:
                 groups: [groups]
         clusterAdminGroups:
           - example-cluster-admins
+      # Hive (hub only; enabled by the hive-config label)
+      # =======================================================================
+      # Merged into the spec of the HiveConfig object multicluster engine creates. Credentials
+      # and CA bundles are Secrets in the hive namespace, referenced by name.
+      # =======================================================================
+      hiveConfig:
+        additionalCertificateAuthoritiesSecretRef:
+          - name: example-ca-bundle
+        managedDomains:
+          - domains:
+              - clusters.example.com
+            aws:
+              credentialsSecretRef:
+                name: example-route53-credentials
       certManager:
         # Built-in autoshift-ca signer ref. Default self-signed root; point at your own
         # Issuer/ClusterIssuer to make autoshift-ca an intermediate (must be CA-capable, not ACME).
@@ -1911,6 +1925,7 @@ hubClusterSets:
       # Cluster provisioning (hive-based cluster install flow)
       cluster-install: 'false'                     # hub only — enables the cluster-install policy set
       acm-enable-provisioning: 'false'            # hub only
+      hive-config: 'false'                        # hub only: merge config.hiveConfig into the HiveConfig object
       # DEPRECATED: superseded by config.acm.provisioning.*, which wins when set.
       # Still honoured so existing deployments keep working; move to config and remove these.
       acm-provisioning-storage-class: ''             # -> config.acm.provisioning.storageClass
