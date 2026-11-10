@@ -378,6 +378,16 @@ hubClusterSets:
           databaseSize: 10Gi                     # Min 10GiB recommended
           filesystemStorageSize: 100Gi           # Min 100GiB recommended
           imageStorageSize: 100Gi                # Red Hat recommended default; less if osImages is pinned
+          # metal3 is merged over the Provisioning spec the policy applies (no provisioning
+          # network, BareMetalHosts watched in every namespace). Set it on a hub that boots hosts
+          # over PXE from a provisioning network. Any field of the Provisioning spec is accepted.
+          metal3:
+            provisioningNetwork: Disabled        # Disabled, Managed or Unmanaged
+            # provisioningNetworkCIDR: 192.0.2.0/24
+            # provisioningIP: 192.0.2.5
+            # provisioningDHCPRange: 192.0.2.50,192.0.2.199
+            # provisioningMacAddresses: ['00:00:5e:00:53:01']
+            # virtualMediaViaExternalNetwork: true
           osImages:
             - openshiftVersion: '4.22'             # Major.Minor
               version: '4.22.0'                    # Red Hat Enterprise Linux CoreOS version string
@@ -2052,6 +2062,8 @@ hubClusterSets:
       odf-subscription-name: odf-operator
       odf-version: 'odf-operator.v4.22.7-rhodf'
       odf-multi-cloud-gateway: standalone    # 'standalone' (noobaa only) or 'standard' (full ODF)
+      odf-external: 'false'                  # 'true' consumes an existing Ceph cluster (needs the rook-ceph-external-cluster-details Secret)
+      odf-external-mcg: manage               # external mode only: 'manage' deploys NooBaa, 'ignore' does not
       odf-noobaa-pvpool: ''                  # Use PV pool for noobaa backing store
       odf-noobaa-store-size: ''              # e.g., '500Gi' - size of noobaa backing store
       odf-noobaa-store-num-volumes: ''       # e.g., '1' - number of volumes

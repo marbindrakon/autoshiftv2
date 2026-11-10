@@ -1,0 +1,35 @@
+# StorageCluster in external mode: the cluster consumes an existing Ceph cluster through the
+# connection details in the rook-ceph-external-cluster-details Secret, and runs no storage
+# daemons of its own. policy-storage-cluster-external-test gates this on that Secret existing.
+#
+# The object keeps the name ocs-storagecluster, so the storage classes are
+# ocs-storagecluster-ceph-rbd and ocs-storagecluster-cephfs, the same names internal mode
+# produces, and every policy that reads autoshift.io/odf-default-storageclass keeps working.
+#
+# config.odf.storageCluster replaces the spec below verbatim, as it does in internal mode.
+object-templates-raw: |
+  {{hub- $cm := (lookup "v1" "ConfigMap" .PolicyMetadata.namespace (printf "%s.rendered-config" .ManagedClusterName)) | default dict hub}}
+  {{hub- $config := (index ($cm.data | default dict) "config" | default "" | fromYaml | default dict) hub}}
+  {{hub- $odf := (index $config "odf" | default dict) hub}}
+  {{hub- $storageCluster := (index $odf "storageCluster" | default dict) hub}}
+  - complianceType: musthave
+    objectDefinition:
+      apiVersion: ocs.openshift.io/v1
+      kind: StorageCluster
+      metadata:
+        name: ocs-storagecluster
+        namespace: openshift-storage
+  {{hub- if (gt (len (keys $storageCluster)) 0) hub}}
+      spec:
+        {{hub $storageCluster | toYaml | autoindent hub}}
+  {{hub- else hub}}
+      spec:
+        externalStorage:
+          enable: true
+        labelSelector: {}
+        managedResources:
+          cephBlockPools:
+            defaultStorageClass: true
+        multiCloudGateway:
+          reconcileStrategy: '{{hub index .ManagedClusterLabels "autoshift.io/odf-external-mcg" | default "manage" hub}}'
+  {{hub- end hub}}
