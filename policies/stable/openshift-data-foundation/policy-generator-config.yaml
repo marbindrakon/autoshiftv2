@@ -36,16 +36,41 @@ policies:
   - name: policy-odf-operator-install
     manifests:
       - path: manifests/operator-install
-  # 2) StorageCluster (standard) + Ceph CSI tolerations. Skips clusters in standalone mode.
+  # 2) StorageCluster (internal) + Ceph CSI tolerations. Skips standalone and external modes.
   - name: policy-storage-cluster
     dependencies:
       - name: policy-odf-operator-install
       - name: policy-storage-nodes-test
         namespace: ${POLICY_NAMESPACE}
     placement:
-      placementPath: placement-odf-standard.yaml
+      placementPath: placement-odf-internal.yaml
     manifests:
       - path: manifests/storage-cluster
+  # 2-ext-test) External mode precondition: the Ceph connection details Secret must exist.
+  #    A test/ assertion, so ALWAYS inform.
+  - name: policy-storage-cluster-external-test
+    remediationAction: inform
+    dependencies:
+      - name: policy-odf-operator-install
+    placement:
+      placementPath: placement-odf-external.yaml
+    manifests:
+      - path: test/storage-cluster-external-secret.yaml
+    customMessage:
+      noncompliant: >-
+        The Secret rook-ceph-external-cluster-details is missing from openshift-storage.
+        Export it from the Ceph cluster and create it on this cluster before external mode
+        can proceed.
+  # 2-ext) StorageCluster (external). Consumes an existing Ceph cluster, so it does not wait
+  #    for storage nodes. Only clusters with odf-external: 'true'.
+  - name: policy-storage-cluster-external
+    dependencies:
+      - name: policy-odf-operator-install
+      - name: policy-storage-cluster-external-test
+    placement:
+      placementPath: placement-odf-external.yaml
+    manifests:
+      - path: manifests/storage-cluster-external.yaml
   # 3) StorageCluster (standalone / NooBaa-only). Only clusters in standalone mode.
   - name: policy-storage-cluster-standalone
     dependencies:

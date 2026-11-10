@@ -949,6 +949,8 @@ Move each to the field shown.
 |-----------------------------------|-------------------|---------------------------|-------|
 | `odf`                             | bool              |                           | If not set OpenShift Data Foundation will not be managed. if Storage Nodes are enable will deploy OpenShift Data Foundation on local storage/ storage nodes |
 | `odf-multi-cloud-gateway`         | string            |                           | values `standalone` or `standard`. Install OpenShift Data Foundation with only noobaa object gateway or full odf |
+| `odf-external`                    | bool              | `false`                   | `true` runs OpenShift Data Foundation in external mode against an existing Ceph cluster. See the following section |
+| `odf-external-mcg`                | string            | `manage`                  | External mode only. `manage` deploys the NooBaa object gateway, `ignore` does not |
 | `odf-noobaa-pvpool`                | bool              |                           | if not set noobaa will be deployed with default settings. Recommended do not set for cloud providers. Use pv pool for storage |
 | `odf-noobaa-store-size`            | string            |                           | example `500Gi`. if pvpool set. Size of noobaa backing store |
 | `odf-noobaa-store-num-volumes`     | string            |                           | example `1`. if pvpool set. number of volumes |
@@ -965,6 +967,23 @@ Move each to the field shown.
 | `odf-source`                      | string            | `redhat-operators`        |       |
 | `odf-source-namespace`            | string            | `openshift-marketplace`   |       |
 | `odf-default-storageclass`        | string            | `ocs-storagecluster-ceph-rbd` | Sets specified storage class as default and all others as non-default |
+
+#### External mode
+
+With `odf-external: 'true'` the cluster consumes an existing Ceph cluster and runs no storage
+daemons of its own, so the policy does not wait for storage nodes and the `odf-ocs-*` labels are
+not read. The `StorageCluster` keeps the name `ocs-storagecluster`, which gives the storage
+classes `ocs-storagecluster-ceph-rbd` and `ocs-storagecluster-cephfs`, the same names internal
+mode produces.
+
+The connection details are the Ceph cluster's own keys, so AutoShift does not create them. Export
+them from the Ceph cluster with the script OpenShift Data Foundation provides, and create the
+Secret `rook-ceph-external-cluster-details` in `openshift-storage` with the output under the key
+`external_cluster_details`. `policy-storage-cluster-external-test` reports `NonCompliant` until
+that Secret exists, and the `StorageCluster` is created only after it does.
+
+`config.odf.storageCluster` replaces the generated spec in external mode as it does in internal
+mode.
 
 ### OpenShift internal registry
 | Variable                          | Type              | Default Value             | Notes |

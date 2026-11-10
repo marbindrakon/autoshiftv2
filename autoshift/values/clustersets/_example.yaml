@@ -2052,6 +2052,8 @@ hubClusterSets:
       odf-subscription-name: odf-operator
       odf-version: 'odf-operator.v4.22.7-rhodf'
       odf-multi-cloud-gateway: standalone    # 'standalone' (noobaa only) or 'standard' (full ODF)
+      odf-external: 'false'                  # 'true' consumes an existing Ceph cluster (needs the rook-ceph-external-cluster-details Secret)
+      odf-external-mcg: manage               # external mode only: 'manage' deploys NooBaa, 'ignore' does not
       odf-noobaa-pvpool: ''                  # Use PV pool for noobaa backing store
       odf-noobaa-store-size: ''              # e.g., '500Gi' - size of noobaa backing store
       odf-noobaa-store-num-volumes: ''       # e.g., '1' - number of volumes
