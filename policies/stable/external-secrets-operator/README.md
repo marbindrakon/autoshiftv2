@@ -264,3 +264,60 @@ For operators that need installation verification:
 - [AutoShift Developer Guide](../../../docs/developer-guide.md) - Comprehensive policy development guide
 - [ACM Policy Documentation](https://access.redhat.com/documentation/en-us/red_hat_advanced_cluster_management_for_kubernetes) - Policy syntax reference in Governence Section
 - [Similar Policies](../../README.md) - Browse other policies for patterns and examples
+## Operand, stores and secrets
+
+Installing the operator deploys nothing until an `ExternalSecretsConfig` exists. Set the label
+`external-secrets-config: 'true'` to have AutoShift create it, and to create the stores and
+secrets declared under `config.externalSecretsOperator`:
+
+```yaml
+hubClusterSets:
+  hub:
+    labels:
+      external-secrets-operator: 'true'
+      external-secrets-config: 'true'
+    config:
+      externalSecretsOperator:
+        operatorConfig: {}            # ExternalSecretsConfig spec; empty = operator defaults
+        clusterSecretStores:
+          example-vault:              # ClusterSecretStore name -> spec
+            provider:
+              vault:
+                server: 'https://vault.example.com'
+                path: 'secret'
+                version: 'v2'
+                auth:
+                  kubernetes:
+                    mountPath: 'kubernetes'
+                    role: 'external-secrets'
+                    serviceAccountRef:
+                      name: 'external-secrets'
+                      namespace: 'external-secrets'
+        externalSecrets:              # ExternalSecret objects
+          - name: example-credentials
+            namespace: example-namespace
+            spec:
+              secretStoreRef:
+                kind: ClusterSecretStore
+                name: example-vault
+              target:
+                name: example-credentials
+              dataFrom:
+                - extract:
+                    key: example/credentials
+```
+
+| Policy | Creates |
+|---|---|
+| `policy-external-secrets-config` | `ExternalSecretsConfig` `cluster` |
+| `policy-external-secrets-stores` | one `ClusterSecretStore` per `clusterSecretStores` entry and one `ExternalSecret` per `externalSecrets` entry |
+
+Each spec is applied verbatim, so any provider the operator supports can be used. Config is
+rendered into ConfigMaps on the hub, so keep credentials out of it: a store authenticates with a
+service account or with a Secret it references, never with a value written here.
+
+An `ExternalSecret` is created only once its namespace exists. One that targets an operator's
+namespace therefore settles after that operator is installed, and needs no ordering of its own.
+
+Other policies that read a Secret by name, such as the object storage credentials for
+observability, can have that Secret delivered this way.

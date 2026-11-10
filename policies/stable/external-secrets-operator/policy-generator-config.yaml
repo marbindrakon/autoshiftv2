@@ -2,6 +2,8 @@ apiVersion: policy.open-cluster-management.io/v1
 kind: PolicyGenerator
 metadata:
   name: external-secrets-operator
+placementBindingDefaults:
+  name: binding-policy-external-secrets-operator
 # Per-deployment scalars (${...}) are substituted by the repo-server CMP (envsubst/sed) BEFORE
 # `kustomize build` runs. They live here and in placement.yaml — never in manifests/, whose hub
 # templates contain `$vars` that substitution would clobber.
@@ -35,3 +37,19 @@ policies:
   - name: policy-external-secrets-operator-install
     manifests:
       - path: manifests
+  # The operand (ExternalSecretsConfig). Only clusters with external-secrets-config: 'true'.
+  - name: policy-external-secrets-config
+    placement:
+      placementPath: placement-external-secrets-config.yaml
+    dependencies:
+      - name: policy-external-secrets-operator-install
+    manifests:
+      - path: manifests-config/external-secrets-config.yaml
+  # ClusterSecretStores and ExternalSecrets from config.externalSecretsOperator.
+  - name: policy-external-secrets-stores
+    placement:
+      placementPath: placement-external-secrets-config.yaml
+    dependencies:
+      - name: policy-external-secrets-config
+    manifests:
+      - path: manifests-stores/external-secrets-stores.yaml

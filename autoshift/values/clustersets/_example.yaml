@@ -54,6 +54,43 @@ hubClusterSets:
       # cert-manager — issuer refs + SANs (DATA; the ENABLE flags are labels below:
       # cert-manager, cert-manager-ca, cert-manager-api-cert, cert-manager-ingress-cert).
       # =======================================================================
+      # =======================================================================
+      # External Secrets (enabled by the external-secrets-config label)
+      # =======================================================================
+      # operatorConfig is the ExternalSecretsConfig spec; leave it empty for the operator
+      # defaults. clusterSecretStores maps a store name to its spec, and externalSecrets lists
+      # ExternalSecret objects; both specs are applied verbatim. Only references belong here:
+      # the credentials and the secret values stay in the backend.
+      # =======================================================================
+      externalSecretsOperator:
+        operatorConfig: {}
+        clusterSecretStores:
+          example-vault:
+            provider:
+              vault:
+                server: 'https://vault.example.com'
+                path: 'secret'
+                version: 'v2'
+                auth:
+                  kubernetes:
+                    mountPath: 'kubernetes'
+                    role: 'external-secrets'
+                    serviceAccountRef:
+                      name: 'external-secrets'
+                      namespace: 'external-secrets'
+        externalSecrets:
+          - name: example-credentials
+            namespace: example-namespace
+            spec:
+              refreshInterval: 1h
+              secretStoreRef:
+                kind: ClusterSecretStore
+                name: example-vault
+              target:
+                name: example-credentials
+              dataFrom:
+                - extract:
+                    key: example/credentials
       certManager:
         # Built-in autoshift-ca signer ref. Default self-signed root; point at your own
         # Issuer/ClusterIssuer to make autoshift-ca an intermediate (must be CA-capable, not ACME).
@@ -2463,6 +2500,7 @@ hubClusterSets:
       external-secrets-operator-version: 'openshift-external-secrets-operator.v1.2.1'
       external-secrets-operator-source: redhat-operators
       external-secrets-operator-source-namespace: openshift-marketplace
+      external-secrets-config: 'false'   # 'true' creates the operand plus the stores and secrets in config.externalSecretsOperator
 
       # =======================================================================
       # OpenTelemetry
