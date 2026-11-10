@@ -101,6 +101,27 @@ hubClusterSets:
             group: 'cert-manager.io'
         # Cluster API server serving cert (api.<domain>). Issuer default autoshift-ca; on a cluster with a
         # real ACME issuer set e.g. name: 'zerossl-production-aws'. extraSANs adds names beyond api.<domain>.
+        # Enabled by the cert-manager-issuers label. clusterIssuers maps an issuer name to its
+        # spec, applied verbatim; a credential is a Secret the spec references in the cert-manager
+        # namespace. operatorConfig is merged into the operator's CertManager object.
+        operatorConfig: {}
+        clusterIssuers:
+          example-acme:
+            acme:
+              server: 'https://acme.example.com/directory'
+              email: 'admin@example.com'
+              privateKeySecretRef:
+                name: example-acme-account-key
+              solvers:
+                - dns01:
+                    route53:
+                      region: us-east-1
+                      accessKeyIDSecretRef:
+                        name: example-dns-credentials
+                        key: access-key-id
+                      secretAccessKeySecretRef:
+                        name: example-dns-credentials
+                        key: secret-access-key
         apiCert:
           issuer:
             name: 'autoshift-ca'
@@ -2398,6 +2419,7 @@ hubClusterSets:
       # policy README (trustedCA companion) or set config.certManager.ingressCert.issuer to a real issuer.
       cert-manager-api-cert: 'false'
       cert-manager-ingress-cert: 'false'
+      cert-manager-issuers: 'false'    # 'true' creates the ClusterIssuers in config.certManager.clusterIssuers
 
       # =======================================================================
       # CloudNativePG (HA PostgreSQL)
