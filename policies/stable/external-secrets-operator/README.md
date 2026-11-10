@@ -321,3 +321,26 @@ namespace therefore settles after that operator is installed, and needs no order
 
 Other policies that read a Secret by name, such as the object storage credentials for
 observability, can have that Secret delivered this way.
+
+### Network access to the secret backend
+
+The operator isolates its pods with deny-all NetworkPolicies and allows only DNS and the
+Kubernetes API. A store cannot reach its backend, and reports `InvalidProviderConfig` with a
+login timeout, until an egress rule is declared in `operatorConfig`:
+
+```yaml
+config:
+  externalSecretsOperator:
+    operatorConfig:
+      controllerConfig:
+        networkPolicies:
+          - name: allow-secret-backend
+            componentName: ExternalSecretsCoreController
+            egress:
+              - to:
+                  - ipBlock:
+                      cidr: 192.0.2.10/32
+                ports:
+                  - port: 443
+                    protocol: TCP
+```
