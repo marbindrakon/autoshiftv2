@@ -1,0 +1,45 @@
+# Cluster OAuth identity providers from config.oauthIdentityProviders.
+#
+#   config:
+#     oauthIdentityProviders:
+#       identityProviders: <list of OAuth identityProviders entries>
+#       clusterAdminGroups: <list of group names>
+#
+# identityProviders is written to the cluster OAuth object as it is declared, so any provider type
+# OpenShift supports can be used. A client secret or CA bundle is a Secret or ConfigMap the entry
+# references by name in openshift-config; nothing secret belongs in config.
+#
+# Each clusterAdminGroups entry is bound to cluster-admin, so members of that group in the
+# identity provider can administer the cluster once kubeadmin is removed.
+object-templates-raw: |
+  {{hub- $cm := (lookup "v1" "ConfigMap" .PolicyMetadata.namespace (printf "%s.rendered-config" .ManagedClusterName)) | default dict hub}}
+  {{hub- $config := (index ($cm.data | default dict) "config" | default "" | fromYaml | default dict) hub}}
+  {{hub- $oauth := (index $config "oauthIdentityProviders" | default dict) hub}}
+  {{hub- $idps := (index $oauth "identityProviders" | default list) hub}}
+  {{hub- if (gt (len $idps) 0) hub}}
+  - complianceType: musthave
+    objectDefinition:
+      apiVersion: config.openshift.io/v1
+      kind: OAuth
+      metadata:
+        name: cluster
+      spec:
+        identityProviders:
+          {{hub $idps | toYaml | autoindent hub}}
+  {{hub- end hub}}
+  {{hub- range $group := (index $oauth "clusterAdminGroups" | default list) hub}}
+  - complianceType: musthave
+    objectDefinition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: autoshift-cluster-admin-{{hub $group | lower | replace " " "-" | replace "_" "-" hub}}
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: cluster-admin
+      subjects:
+        - apiGroup: rbac.authorization.k8s.io
+          kind: Group
+          name: '{{hub $group hub}}'
+  {{hub- end hub}}

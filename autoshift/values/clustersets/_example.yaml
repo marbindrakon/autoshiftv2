@@ -91,6 +91,29 @@ hubClusterSets:
               dataFrom:
                 - extract:
                     key: example/credentials
+      # OAuth identity providers (enabled by the oauth-identity-providers label)
+      # =======================================================================
+      # identityProviders is written to the cluster OAuth object as declared; a client secret is
+      # a Secret the entry references in openshift-config. clusterAdminGroups binds identity
+      # provider groups to cluster-admin.
+      # =======================================================================
+      oauthIdentityProviders:
+        identityProviders:
+          - name: example-sso
+            mappingMethod: claim
+            type: OpenID
+            openID:
+              issuer: 'https://sso.example.com/realms/example'
+              clientID: example-cluster
+              clientSecret:
+                name: example-sso-client-secret
+              claims:
+                preferredUsername: [preferred_username]
+                name: [name]
+                email: [email]
+                groups: [groups]
+        clusterAdminGroups:
+          - example-cluster-admins
       certManager:
         # Built-in autoshift-ca signer ref. Default self-signed root; point at your own
         # Issuer/ClusterIssuer to make autoshift-ca an intermediate (must be CA-capable, not ACME).
@@ -2496,6 +2519,7 @@ hubClusterSets:
       # Remove Kubeadmin
       # =======================================================================
       remove-kubeadmin: 'false'              # Remove kubeadmin secret (disables OAuth-based kubeadmin login)
+      oauth-identity-providers: 'false'      # Configure OAuth identity providers from config.oauthIdentityProviders
 
       # =======================================================================
       # Disconnected Mirror Settings

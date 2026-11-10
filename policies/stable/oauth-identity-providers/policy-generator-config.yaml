@@ -1,0 +1,26 @@
+apiVersion: policy.open-cluster-management.io/v1
+kind: PolicyGenerator
+metadata:
+  name: oauth-identity-providers
+placementBindingDefaults:
+  name: binding-policy-oauth-identity-providers
+policyDefaults:
+  namespace: ${POLICY_NAMESPACE}
+  remediationAction: ${REMEDIATION}
+  severity: medium
+  consolidateManifests: true
+  evaluationInterval:
+    compliant: ${EVAL_COMPLIANT}
+    noncompliant: ${EVAL_NONCOMPLIANT}
+  standards:
+    - NIST SP 800-53
+  categories:
+    - IA Identification and Authentication
+  controls:
+    - IA-2 Identification and Authentication
+  placement:
+    placementPath: placement.yaml
+policies:
+  - name: policy-oauth-identity-providers
+    manifests:
+      - path: manifests/oauth-identity-providers.yaml
