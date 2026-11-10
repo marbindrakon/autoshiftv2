@@ -2425,6 +2425,7 @@ hubClusterSets:
       # Remove Kubeadmin
       # =======================================================================
       remove-kubeadmin: 'false'              # Remove kubeadmin secret (disables OAuth-based kubeadmin login)
+      etcd-hardware-speed: ''                # etcd timing: 'Standard' or 'Slower' (control planes on shared storage); blank = not managed
 
       # =======================================================================
       # Disconnected Mirror Settings

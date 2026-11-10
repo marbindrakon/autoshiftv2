@@ -1,0 +1,18 @@
+# etcd heartbeat and election timing for the control plane's storage.
+#
+# The label value is the etcd operator's controlPlaneHardwareSpeed: Standard, or Slower for
+# control planes on network or shared storage whose fsync latency makes etcd elect leaders under
+# load. An empty label value leaves the choice to the platform default.
+object-templates-raw: |
+  {{hub- $speed := (index .ManagedClusterLabels "autoshift.io/etcd-hardware-speed" | default "") hub}}
+  {{hub- if not (has $speed (list "" "Standard" "Slower")) hub}}
+  {{hub- fail (printf "etcd-hardware-speed: unsupported value %q; use Standard or Slower" $speed) hub}}
+  {{hub- end hub}}
+  - complianceType: musthave
+    objectDefinition:
+      apiVersion: operator.openshift.io/v1
+      kind: Etcd
+      metadata:
+        name: cluster
+      spec:
+        controlPlaneHardwareSpeed: '{{hub $speed hub}}'
