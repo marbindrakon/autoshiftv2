@@ -214,6 +214,12 @@ The global-observability chart reads `scrapeInterval` (default `300s`), `logLeve
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `osImages` | list | | Red Hat Enterprise Linux CoreOS images the hub offers to the Assisted Installer. Each entry takes `openshiftVersion`, `version`, `cpuArchitecture` and `url`, plus an optional `rootFSUrl` |
+| `metal3` | map | | Fields merged over the metal3 `Provisioning` spec the policy applies. The base is `provisioningNetwork: Disabled` and `watchAllNamespaces: true`. Any field of the spec is accepted, and a value set here wins |
+
+A hub that boots hosts from virtual media needs no `metal3` block. A hub that boots hosts over PXE
+sets `provisioningNetwork` to `Managed` or `Unmanaged` together with the fields that mode requires,
+such as `provisioningNetworkCIDR`, `provisioningIP`, `provisioningDHCPRange`, and either
+`provisioningInterface` or `provisioningMacAddresses`.
 
 Left unset, Red Hat Advanced Cluster Management offers its full default image catalog: every
 supported Red Hat OpenShift Container Platform version for x86_64, arm64, s390x and ppc64le. That

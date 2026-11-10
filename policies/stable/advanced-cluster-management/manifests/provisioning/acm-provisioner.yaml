@@ -1,7 +1,36 @@
-apiVersion: metal3.io/v1alpha1
-kind: Provisioning
-metadata:
-  name: provisioning-configuration
-spec:
+# The cluster-scoped metal3 Provisioning object the Bare Metal Operator runs from.
+#
+# The base below is what every hub gets: no provisioning network, so hosts boot from virtual
+# media, and BareMetalHosts are watched in every namespace. config.acm.provisioning.metal3 is
+# merged on top key by key, so a hub that boots hosts over PXE declares its provisioning network
+# there, for example:
+#
+#   config:
+#     acm:
+#       provisioning:
+#         metal3:
+#           provisioningNetwork: Managed
+#           provisioningNetworkCIDR: 192.0.2.0/24
+#           provisioningIP: 192.0.2.5
+#           provisioningDHCPRange: 192.0.2.50,192.0.2.199
+#           provisioningMacAddresses: ['00:00:5e:00:53:01', '00:00:5e:00:53:02', '00:00:5e:00:53:03']
+#
+# Any field of the Provisioning spec is accepted. Config wins over the base, including false.
+object-templates-raw: |
+  {{hub $policyNs := "${POLICY_NAMESPACE}" hub}}
+  {{hub- $rcm := (lookup "v1" "ConfigMap" $policyNs (printf "%s.rendered-config" .ManagedClusterName)) | default dict hub}}
+  {{hub- $rcData := (index $rcm "data" | default dict) hub}}
+  {{hub- $rcConfig := (index $rcData "config" | default "" | fromYaml | default dict) hub}}
+  {{hub- $metal3 := (dig "acm" "provisioning" "metal3" (dict) $rcConfig) hub}}
+  {{hub- $spec := (`
   provisioningNetwork: Disabled
-  watchAllNamespaces: true
+  watchAllNamespaces: true` | fromYaml) hub}}
+  {{hub- $spec = (mergeOverwrite $spec $metal3) hub}}
+  - complianceType: musthave
+    objectDefinition:
+      apiVersion: metal3.io/v1alpha1
+      kind: Provisioning
+      metadata:
+        name: provisioning-configuration
+      spec:
+        {{hub $spec | toYaml | autoindent hub}}
