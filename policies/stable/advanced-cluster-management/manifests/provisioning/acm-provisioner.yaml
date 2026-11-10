@@ -16,6 +16,12 @@
 #           provisioningMacAddresses: ['00:00:5e:00:53:01', '00:00:5e:00:53:02', '00:00:5e:00:53:03']
 #
 # Any field of the Provisioning spec is accepted. Config wins over the base, including false.
+#
+# A hub that sets metal3 gets exactly the merged spec (mustonlyhave), because musthave would add
+# to a list such as provisioningMacAddresses rather than replace it, leaving the installer's
+# entries in place. Declare every field the hub needs, including any the installer wrote that
+# should stay, such as additionalNTPServers. A hub that sets nothing keeps musthave, so fields
+# written by the installer are left alone as before.
 object-templates-raw: |
   {{hub $policyNs := "${POLICY_NAMESPACE}" hub}}
   {{hub- $rcm := (lookup "v1" "ConfigMap" $policyNs (printf "%s.rendered-config" .ManagedClusterName)) | default dict hub}}
@@ -26,7 +32,7 @@ object-templates-raw: |
   provisioningNetwork: Disabled
   watchAllNamespaces: true` | fromYaml) hub}}
   {{hub- $spec = (mergeOverwrite $spec $metal3) hub}}
-  - complianceType: musthave
+  - complianceType: {{hub ternary "mustonlyhave" "musthave" (gt (len (keys $metal3)) 0) hub}}
     objectDefinition:
       apiVersion: metal3.io/v1alpha1
       kind: Provisioning

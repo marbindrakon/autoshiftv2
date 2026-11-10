@@ -221,6 +221,10 @@ sets `provisioningNetwork` to `Managed` or `Unmanaged` together with the fields 
 such as `provisioningNetworkCIDR`, `provisioningIP`, `provisioningDHCPRange`, and either
 `provisioningInterface` or `provisioningMacAddresses`.
 
+When `metal3` is set the policy enforces exactly the merged spec, so a list such as
+`provisioningMacAddresses` is replaced rather than added to. Declare every field the hub needs,
+including any the installer wrote that should stay, such as `additionalNTPServers`.
+
 Left unset, Red Hat Advanced Cluster Management offers its full default image catalog: every
 supported Red Hat OpenShift Container Platform version for x86_64, arm64, s390x and ppc64le. That
 catalog grows as releases are added, so Red Hat recommends `100Gi` of image storage to hold it,
