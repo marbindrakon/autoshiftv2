@@ -54,6 +54,21 @@ hubClusterSets:
       # cert-manager — issuer refs + SANs (DATA; the ENABLE flags are labels below:
       # cert-manager, cert-manager-ca, cert-manager-api-cert, cert-manager-ingress-cert).
       # =======================================================================
+      # =======================================================================
+      # chrony (enabled by the chrony label)
+      # =======================================================================
+      # Time sources written to /etc/chrony.conf on the listed MachineConfigPools. ptpKvm adds
+      # the hypervisor clock for virtual machines on KVM.
+      # =======================================================================
+      chrony:
+        servers:
+          - 192.0.2.1
+          - 192.0.2.2
+        pools: []
+        ptpKvm: false
+        roles:
+          - master
+          - worker
       certManager:
         # Built-in autoshift-ca signer ref. Default self-signed root; point at your own
         # Issuer/ClusterIssuer to make autoshift-ca an intermediate (must be CA-capable, not ACME).
@@ -2425,6 +2440,7 @@ hubClusterSets:
       # Remove Kubeadmin
       # =======================================================================
       remove-kubeadmin: 'false'              # Remove kubeadmin secret (disables OAuth-based kubeadmin login)
+      chrony: 'false'                        # Node time sources from config.chrony (rolls the nodes when it changes)
 
       # =======================================================================
       # Disconnected Mirror Settings
