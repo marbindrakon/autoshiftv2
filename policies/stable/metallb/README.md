@@ -49,3 +49,34 @@ To test locally before pushing:
 ```bash
 helm template autoshift autoshift -f autoshift/values/global.yaml -f autoshift/values/clustersets/hub.yaml -f autoshift/values/clustersets/managed.yaml
 ```
+
+## Per-cluster objects from config (`metallb-config`)
+
+The `metallb-ippool-N`, `metallb-l2-N`, `metallb-bgp-N` and `metallb-peer-N` labels name files
+committed under `files/`, which suits settings shared by many clusters. Addresses and BGP peers
+usually differ for every cluster, so they can be declared in that cluster's config instead:
+
+```yaml
+labels:
+  metallb: 'true'
+  metallb-config: 'true'
+config:
+  metallb:
+    ipAddressPools:
+      example-pool:
+        addresses:
+          - 192.0.2.128/25
+    bgpPeers:
+      example-peer:
+        myASN: 64512
+        peerASN: 64513
+        peerAddress: 192.0.2.1
+    bgpAdvertisements:
+      example-advertisement:
+        ipAddressPools: [example-pool]
+        peers: [example-peer]
+```
+
+`ipAddressPools`, `l2Advertisements`, `bgpPeers`, `bgpAdvertisements` and `bfdProfiles` each map
+an object name to its spec, applied verbatim in `metallb-system`. The two styles are independent
+and can be combined.

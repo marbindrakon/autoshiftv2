@@ -142,6 +142,34 @@ hubClusterSets:
         roles:
           - master
           - worker
+      # MetalLB objects from config (enabled by the metallb-config label)
+      # =======================================================================
+      # Each entry becomes one object in metallb-system, spec applied verbatim. Use this for
+      # addresses and peers that differ per cluster; the metallb-ippool-N style labels name
+      # files shared by every cluster instead.
+      # =======================================================================
+      metallb:
+        # Pin to specific CSV(s). Omit to track the channel.
+        # versions:
+        #   - 'metallb-operator.vX.Y.Z'
+        # startingCSV: 'metallb-operator.vX.Y.Z'
+        ipAddressPools:
+          example-pool:
+            addresses:
+              - 192.0.2.128/25
+        bgpPeers:
+          example-peer:
+            myASN: 64512
+            peerASN: 64513
+            peerAddress: 192.0.2.1
+        bgpAdvertisements:
+          example-advertisement:
+            ipAddressPools:
+              - example-pool
+            peers:
+              - example-peer
+        l2Advertisements: {}
+        bfdProfiles: {}
       certManager:
         # Built-in autoshift-ca signer ref. Default self-signed root; point at your own
         # Issuer/ClusterIssuer to make autoshift-ca an intermediate (must be CA-capable, not ACME).
@@ -1173,10 +1201,6 @@ hubClusterSets:
       #   versions:
       #     - 'lvms-operator.vX.Y.Z'
       #   startingCSV: 'lvms-operator.vX.Y.Z'
-      # metallb:
-      #   versions:
-      #     - 'metallb-operator.vX.Y.Z'
-      #   startingCSV: 'metallb-operator.vX.Y.Z'
       # mtv:
       #   versions:
       #     - 'mtv-operator.vX.Y.Z'
@@ -2012,6 +2036,7 @@ hubClusterSets:
       metallb-quota: 'false'
       metallb-quota-cpu: ''                  # Number of cpu for Resource Quota
       metallb-quota-memory: ''               # Memory for Resource Quota (e.g., 2Gi)
+      metallb-config: 'false'                # 'true' creates pools, advertisements and peers from config.metallb
       metallb-ippool-1: ''                   # Name of IPPool config file (add -2, -3 for more)
       metallb-l2-1: ''                       # Name of L2 Advertisement config file
       metallb-bgp-1: ''                      # Name of BGP Advertisement config file
