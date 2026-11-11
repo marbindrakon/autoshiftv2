@@ -128,6 +128,20 @@ hubClusterSets:
             aws:
               credentialsSecretRef:
                 name: example-route53-credentials
+      # chrony (enabled by the chrony label)
+      # =======================================================================
+      # Time sources written to /etc/chrony.conf on the listed MachineConfigPools. ptpKvm adds
+      # the hypervisor clock for virtual machines on KVM.
+      # =======================================================================
+      chrony:
+        servers:
+          - 192.0.2.1
+          - 192.0.2.2
+        pools: []
+        ptpKvm: false
+        roles:
+          - master
+          - worker
       certManager:
         # Built-in autoshift-ca signer ref. Default self-signed root; point at your own
         # Issuer/ClusterIssuer to make autoshift-ca an intermediate (must be CA-capable, not ACME).
@@ -2536,6 +2550,7 @@ hubClusterSets:
       remove-kubeadmin: 'false'              # Remove kubeadmin secret (disables OAuth-based kubeadmin login)
       oauth-identity-providers: 'false'      # Configure OAuth identity providers from config.oauthIdentityProviders
       etcd-hardware-speed: ''                # etcd timing: 'Standard' or 'Slower' (control planes on shared storage); blank = not managed
+      chrony: 'false'                        # Node time sources from config.chrony (rolls the nodes when it changes)
 
       # =======================================================================
       # Disconnected Mirror Settings

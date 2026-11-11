@@ -1,0 +1,62 @@
+# Node time sources, from config.chrony.
+#
+#   config:
+#     chrony:
+#       servers: [192.0.2.1, 192.0.2.2]     # NTP servers, each added as "server <x> iburst"
+#       pools: [pool.example.com]           # NTP pools, each added as "pool <x> iburst"
+#       ptpKvm: false                       # true: also sync to the hypervisor clock (virtual machines on KVM)
+#       roles: [master, worker]             # MachineConfigPools that get the file
+#
+# One MachineConfig per role writes /etc/chrony.conf. With ptpKvm it also loads the ptp_kvm
+# module and adds the hypervisor's PTP clock as a reference clock. Applying or changing a
+# MachineConfig makes the Machine Config Operator roll the nodes of that pool.
+object-templates-raw: |
+  {{hub- $cm := (lookup "v1" "ConfigMap" .PolicyMetadata.namespace (printf "%s.rendered-config" .ManagedClusterName)) | default dict hub}}
+  {{hub- $config := (index ($cm.data | default dict) "config" | default "" | fromYaml | default dict) hub}}
+  {{hub- $chrony := (index $config "chrony" | default dict) hub}}
+  {{hub- $servers := (index $chrony "servers" | default list) hub}}
+  {{hub- $pools := (index $chrony "pools" | default list) hub}}
+  {{hub- $ptpKvm := (index $chrony "ptpKvm" | default false) hub}}
+  {{hub- $roles := (index $chrony "roles" | default (list "master" "worker")) hub}}
+  {{hub- if (and (eq (len $servers) 0) (eq (len $pools) 0) (not $ptpKvm)) hub}}
+  {{hub- fail "chrony: config.chrony needs at least one of servers, pools or ptpKvm" hub}}
+  {{hub- end hub}}
+  {{hub- $conf := "" hub}}
+  {{hub- if $ptpKvm hub}}
+  {{hub- $conf = printf "%srefclock PHC /dev/ptp0 poll 3 dpoll -2 offset 0 stratum 2\n" $conf hub}}
+  {{hub- end hub}}
+  {{hub- range $s := $servers hub}}
+  {{hub- $conf = printf "%sserver %s iburst\n" $conf $s hub}}
+  {{hub- end hub}}
+  {{hub- range $p := $pools hub}}
+  {{hub- $conf = printf "%spool %s iburst\n" $conf $p hub}}
+  {{hub- end hub}}
+  {{hub- $conf = printf "%sdriftfile /var/lib/chrony/drift\nmakestep 1.0 3\nrtcsync\nkeyfile /etc/chrony.keys\nleapsectz right/UTC\nlogdir /var/log/chrony\n" $conf hub}}
+  {{hub- range $role := $roles hub}}
+  - complianceType: musthave
+    objectDefinition:
+      apiVersion: machineconfiguration.openshift.io/v1
+      kind: MachineConfig
+      metadata:
+        name: 50-{{hub $role hub}}-chrony
+        labels:
+          machineconfiguration.openshift.io/role: {{hub $role hub}}
+      spec:
+        config:
+          ignition:
+            version: 3.4.0
+          storage:
+            files:
+              - path: /etc/chrony.conf
+                mode: 420
+                overwrite: true
+                contents:
+                  source: 'data:text/plain;charset=utf-8;base64,{{hub $conf | base64enc hub}}'
+              {{hub- if $ptpKvm hub}}
+              - path: /etc/modules-load.d/ptp_kvm.conf
+                mode: 420
+                overwrite: true
+                contents:
+                  source: 'data:text/plain;charset=utf-8;base64,{{hub "ptp_kvm\n" | base64enc hub}}'
+              {{hub- end hub}}
+  {{hub- end hub}}
