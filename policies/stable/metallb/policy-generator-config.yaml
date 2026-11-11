@@ -111,3 +111,12 @@ policies:
       - name: policy-peer-configmaps
     manifests:
       - path: manifests/peer-config.yaml
+  # Pools, advertisements and BGP peers from config.metallb. Only clusters with
+  # metallb-config: 'true'. Independent of the file-based policies above.
+  - name: policy-metallb-config
+    placement:
+      placementPath: placement-config.yaml
+    dependencies:
+      - name: policy-deploy-metallb
+    manifests:
+      - path: manifests/metallb-from-config.yaml

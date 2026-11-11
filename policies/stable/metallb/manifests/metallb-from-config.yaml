@@ -1,0 +1,73 @@
+# MetalLB address pools, advertisements and BGP peers from config.metallb.
+#
+#   config:
+#     metallb:
+#       ipAddressPools:    {<name>: <IPAddressPool spec>}
+#       l2Advertisements:  {<name>: <L2Advertisement spec>}
+#       bgpPeers:          {<name>: <BGPPeer spec>}
+#       bgpAdvertisements: {<name>: <BGPAdvertisement spec>}
+#       bfdProfiles:       {<name>: <BFDProfile spec>}
+#
+# Each map entry becomes one object in metallb-system with the spec applied verbatim. This is the
+# per-cluster alternative to the metallb-ippool-N, metallb-l2-N, metallb-bgp-N and metallb-peer-N
+# labels, which name files committed to the policy directory: addresses and peer settings that
+# differ for every cluster belong in that cluster's config instead.
+object-templates-raw: |
+  {{hub- $cm := (lookup "v1" "ConfigMap" .PolicyMetadata.namespace (printf "%s.rendered-config" .ManagedClusterName)) | default dict hub}}
+  {{hub- $config := (index ($cm.data | default dict) "config" | default "" | fromYaml | default dict) hub}}
+  {{hub- $metallb := (index $config "metallb" | default dict) hub}}
+  {{hub- range $name, $spec := (index $metallb "bfdProfiles" | default dict) hub}}
+  - complianceType: musthave
+    objectDefinition:
+      apiVersion: metallb.io/v1beta1
+      kind: BFDProfile
+      metadata:
+        name: {{hub $name hub}}
+        namespace: metallb-system
+      spec:
+        {{hub $spec | toYaml | autoindent hub}}
+  {{hub- end hub}}
+  {{hub- range $name, $spec := (index $metallb "ipAddressPools" | default dict) hub}}
+  - complianceType: musthave
+    objectDefinition:
+      apiVersion: metallb.io/v1beta1
+      kind: IPAddressPool
+      metadata:
+        name: {{hub $name hub}}
+        namespace: metallb-system
+      spec:
+        {{hub $spec | toYaml | autoindent hub}}
+  {{hub- end hub}}
+  {{hub- range $name, $spec := (index $metallb "bgpPeers" | default dict) hub}}
+  - complianceType: musthave
+    objectDefinition:
+      apiVersion: metallb.io/v1beta2
+      kind: BGPPeer
+      metadata:
+        name: {{hub $name hub}}
+        namespace: metallb-system
+      spec:
+        {{hub $spec | toYaml | autoindent hub}}
+  {{hub- end hub}}
+  {{hub- range $name, $spec := (index $metallb "l2Advertisements" | default dict) hub}}
+  - complianceType: musthave
+    objectDefinition:
+      apiVersion: metallb.io/v1beta1
+      kind: L2Advertisement
+      metadata:
+        name: {{hub $name hub}}
+        namespace: metallb-system
+      spec:
+        {{hub $spec | toYaml | autoindent hub}}
+  {{hub- end hub}}
+  {{hub- range $name, $spec := (index $metallb "bgpAdvertisements" | default dict) hub}}
+  - complianceType: musthave
+    objectDefinition:
+      apiVersion: metallb.io/v1beta1
+      kind: BGPAdvertisement
+      metadata:
+        name: {{hub $name hub}}
+        namespace: metallb-system
+      spec:
+        {{hub $spec | toYaml | autoindent hub}}
+  {{hub- end hub}}
