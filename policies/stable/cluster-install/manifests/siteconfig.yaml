@@ -56,7 +56,8 @@ object-templates-raw: |
         {{- fail (printf "config.disconnected.mirrorRegistry.caRef: ConfigMap %s/%s has no key %s" $refNs (index $caRef "name") (index $caRef "key")) }}
         {{- end }}
       {{- end }}
-      {{- $bmcEndpoint := (index $ci "bmcEndpoint" | default "/redfish/v1/Systems/1") }}
+      {{- $bmcEndpoint := (ternary (index $ci "bmcEndpoint" | default "") "/redfish/v1/Systems/1" (hasKey $ci "bmcEndpoint")) }}
+      {{- $bootMode := (index $ci "bootMode" | default "") }}
       {{- $clusterNetwork := (index $networking "clusterNetwork") }}
       {{- $machineNetwork := (index $networking "machineNetwork") }}
       {{- $serviceNetwork := (index $networking "serviceNetwork") }}
@@ -367,7 +368,8 @@ object-templates-raw: |
 
       {{- range $hostname, $host := $hosts }}
         {{ $hostFQDN := (printf "%s.%s.%s" $hostname $clusterName $baseDomain) }}
-        {{ $hostBmcEndpoint := (index $host "bmcEndpoint" | default $bmcEndpoint) }}
+        {{ $hostBmcEndpoint := (ternary (index $host "bmcEndpoint" | default "") $bmcEndpoint (hasKey $host "bmcEndpoint")) }}
+        {{ $hostBootMode := (index $host "bootMode" | default $bootMode) }}
         {{ $bmcAddress := (printf "%s://%s%s" (index $host "bmcPrefix") (index $host "bmcIP") $hostBmcEndpoint) }}
   - complianceType: musthave
     objectDefinition:
@@ -395,6 +397,9 @@ object-templates-raw: |
               credentialsName: {{ $hostname }}-bmc-cred
               disableCertificateVerification: true
             bootMACAddress: '{{ index $host "bootMACAddress" }}'
+          {{- if $hostBootMode }}
+            bootMode: {{ $hostBootMode }}
+          {{- end }}
           {{- if not (empty (index $host "rootDeviceHints" | default "")) }}
             rootDeviceHints:
               {{ index $host "rootDeviceHints" | toYaml | autoindent }}
@@ -576,7 +581,8 @@ object-templates-raw: |
         nodes:
       {{- range $hostname, $host := $hosts }}
         {{ $hostFQDN := (printf "%s.%s.%s" $hostname $clusterName $baseDomain) }}
-        {{ $hostBmcEndpoint := (index $host "bmcEndpoint" | default $bmcEndpoint) }}
+        {{ $hostBmcEndpoint := (ternary (index $host "bmcEndpoint" | default "") $bmcEndpoint (hasKey $host "bmcEndpoint")) }}
+        {{ $hostBootMode := (index $host "bootMode" | default $bootMode) }}
         {{ $bmcAddress := (printf "%s://%s%s" (index $host "bmcPrefix") (index $host "bmcIP") $hostBmcEndpoint) }}
           - hostName: {{ $hostFQDN }}
             role: {{ index $host "role" | default "master" }}
@@ -584,6 +590,9 @@ object-templates-raw: |
             bmcCredentialsName:
               name: {{ $hostname }}-bmc-cred
             bootMACAddress: {{ index $host "bootMACAddress" }}
+          {{- if $hostBootMode }}
+            bootMode: {{ $hostBootMode }}
+          {{- end }}
             templateRefs:
               - name: bmh-{{ $hostname }}
                 namespace: {{ $clusterName }}

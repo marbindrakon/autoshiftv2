@@ -139,6 +139,7 @@ clusters:
           bmcIP: '192.168.1.10'
           bmcPrefix: 'redfish-virtualmedia'
           # bmcEndpoint: '/redfish/v1/Systems/1'    # optional, overrides cluster-level
+          # bootMode: UEFI                           # optional: UEFI, UEFISecureBoot or legacy
           # bmcCredentialRef:                         # optional, overrides cluster-level
           #   name: 'custom-cred'
           #   namespace: 'custom-ns'
