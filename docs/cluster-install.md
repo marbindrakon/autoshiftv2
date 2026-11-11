@@ -147,6 +147,7 @@ hosts:
     bmcIP: '192.168.1.10'
     bmcPrefix: 'redfish-virtualmedia'      # BMC protocol prefix
     bmcEndpoint: '/redfish/v1/Systems/1'   # optional, overrides cluster-level
+    bootMode: UEFI                         # optional: UEFI, UEFISecureBoot or legacy; overrides cluster-level
     bootMACAddress: '00:00:00:00:00:01'
     primaryMac: '00:00:00:00:00:02'        # MAC for bond, defaults to first interface
     rootDeviceHints:                        # optional, disk selection for OS install
@@ -166,6 +167,23 @@ hosts:
 ```
 
 **role**: Required for the SiteConfig `ClusterInstance`. Defaults to `master`. Set to `worker` for dedicated worker nodes. The number of hosts with `role: master` must match `controlPlaneAgents`.
+
+**BMC address**: built as `<bmcPrefix>://<bmcIP><bmcEndpoint>`. For Redfish the endpoint is the
+system path and defaults to `/redfish/v1/Systems/1`. A protocol that takes no path, such as IPMI,
+sets the endpoint to an empty string, at the cluster level or per host:
+
+```yaml
+hosts:
+  master-0:
+    bmcPrefix: ipmi
+    bmcIP: '192.0.2.10'
+    bmcEndpoint: ''          # ipmi://192.0.2.10
+    bootMode: legacy
+```
+
+**`bootMode`**: Optional. `UEFI`, `UEFISecureBoot` or `legacy`, set on the `BareMetalHost` and the
+`ClusterInstance` node. Unset leaves the Bare Metal Operator default (`UEFI`). Set it in
+`clusterInstall` for every host or under one host to override.
 
 **`rootDeviceHints`**: Optional hints for the Metal3 `BareMetalHost` to select the installation disk. Supported hints: `deviceName`, `serialNumber`, `model`, `vendor`, `wwn`, `hctl`, `rotational`, `minSizeGigabytes`.
 
@@ -287,7 +305,8 @@ clusterInstall:
   cpuPartitioning: 'None'            # 'None' (default) or 'AllNodes' — install-time only, see docs/workload-partitioning.md
   pullSecretRef: 'default-pull-secret'
   bmcCredentialRef: 'default-bmc-cred'
-  bmcEndpoint: '/redfish/v1/Systems/1'
+  bmcEndpoint: '/redfish/v1/Systems/1'   # '' for a protocol with no path, such as ipmi
+  bootMode: UEFI                         # optional default for every host
   secretSourceNamespace: 'cluster-install-secrets'
   # SSH Public Key — provide inline OR reference a ConfigMap (not both)
   sshPublicKey: 'ssh-rsa ...'              # option 1: inline value
